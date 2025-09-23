@@ -1,19 +1,20 @@
-# Rental-Management-dashboard
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive Rental Dashboard</title>
+<title>Rental Management Dashboard</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
-.sidebar { height: 100vh; background: #2c3e50; color: white; position: fixed; width: 250px; padding-top: 20px; }
-.sidebar h2 { text-align: center; margin-bottom: 30px; font-size: 1.5rem; }
-.sidebar a { color: white; display: block; padding: 10px 20px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; }
+.sidebar { height: 100vh; background: #2c3e50; color: white; padding-top: 20px; width: 180px; transition: width 0.3s; position: fixed; }
+.sidebar.collapsed { width: 50px; }
+.sidebar h2 { text-align: center; font-size: 1.3rem; margin-bottom: 20px; }
+.sidebar a { color: white; display: block; padding: 10px 15px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar a:hover { background: #34495e; }
-.main { margin-left: 250px; padding: 20px; }
+.main { margin-left: 180px; transition: margin-left 0.3s; padding: 20px; }
+.main.expanded { margin-left: 50px; }
 .kpi-card { padding: 15px; height: 120px; display: flex; flex-direction: column; justify-content: center; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: white; }
 .kpi-card h5 { font-size: 1rem; margin-bottom: 5px; }
 .kpi-card h2 { font-size: 1.5rem; margin: 0; }
@@ -24,7 +25,8 @@ table th, table td { vertical-align: middle !important; }
 </head>
 <body>
 
-<div class="sidebar">
+<!-- Sidebar -->
+<div class="sidebar" id="sidebar">
   <h2>Rental Dashboard</h2>
   <a href="#">Overview</a>
   <a href="#">Properties</a>
@@ -32,10 +34,12 @@ table th, table td { vertical-align: middle !important; }
   <a href="#">Payments</a>
   <a href="#">Maintenance</a>
   <a href="#">Reports</a>
+  <button class="btn btn-sm btn-light mt-3 ms-3" id="toggleSidebar">Toggle</button>
 </div>
 
-<div class="main">
-  <h1 class="mb-4">Property Rental Management Dashboard</h1>
+<!-- Main Content -->
+<div class="main" id="mainContent">
+  <h1 class="mb-4">Rental Management Dashboard</h1>
 
   <!-- KPI Cards -->
   <div class="row mb-4 g-3">
@@ -74,7 +78,7 @@ table th, table td { vertical-align: middle !important; }
   </div>
 </div>
 
-<!-- Modal for Pending Applications -->
+<!-- Pending Applications Modal -->
 <div class="modal fade" id="pendingModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -90,32 +94,35 @@ table th, table td { vertical-align: middle !important; }
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-/* Initialize Charts */
+// Sidebar toggle
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('mainContent');
+document.getElementById('toggleSidebar').addEventListener('click', ()=>{
+  sidebar.classList.toggle('collapsed');
+  mainContent.classList.toggle('expanded');
+});
+
+// Charts
 const rentCtx = document.getElementById('rentChart').getContext('2d');
-const rentChart = new Chart(rentCtx, {type:'line', data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets:[{label:'Rent Collected', data:Array(12).fill(0), backgroundColor:'rgba(39,174,96,0.2)', borderColor:'rgba(39,174,96,1)', borderWidth:2, fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:'rgba(39,174,96,1)'}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1000}}, x:{ticks:{maxRotation:0}}}}});
+const rentChart = new Chart(rentCtx, {type:'line', data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets:[{label:'Rent Collected', data:Array(12).fill(0), backgroundColor:'rgba(39,174,96,0.2)', borderColor:'rgba(39,174,96,1)', borderWidth:2, fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:'rgba(39,174,96,1)'}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:true}}, scales:{y:{beginAtZero:true, ticks:{stepSize:1000}}}}});
 
 const maintenanceCtx = document.getElementById('maintenanceChart').getContext('2d');
 const maintenanceChart = new Chart(maintenanceCtx, {type:'doughnut', data:{labels:['Pending','In Progress','Completed'], datasets:[{label:'Maintenance Status', data:[0,0,0], backgroundColor:['#e74c3c','#f1c40f','#2ecc71']}]}, options:{responsive:true, maintainAspectRatio:false}});
 
-/* Dashboard State */
+// Dashboard Data
 let properties = [];
 let tenants = [];
 let maintenanceCounts = {Pending:0, InProgress:0, Completed:0};
 
-/* Add Rental Application */
-function addRentalApplication(app) {
+// Add Rental Application
+function addRentalApplication(app){
   let property = properties.find(p=>p.address===app.propertyAddress);
-  if(!property){
-    property={address:app.propertyAddress,type:app.propertyType,bedrooms:app.bedrooms,bathrooms:app.bathrooms,status:app.tenantName?'Occupied':'Vacant',tenant:app.tenantName||'-',rent:app.monthlyRent||0,pendingApplications:[]};
-    properties.push(property);
-  } else {
-    if(property.status==='Occupied'){property.pendingApplications.push({name:app.tenantName,leaseStart:app.leaseStart,leaseEnd:app.leaseEnd,monthlyRent:app.monthlyRent});}
-    else{property.tenant=app.tenantName; property.rent=app.monthlyRent; property.status='Occupied';}
-  }
+  if(!property){property={address:app.propertyAddress,type:app.propertyType,bedrooms:app.bedrooms,bathrooms:app.bathrooms,status:app.tenantName?'Occupied':'Vacant',tenant:app.tenantName||'-',rent:app.monthlyRent||0,pendingApplications:[]}; properties.push(property);}
+  else{if(property.status==='Occupied'){property.pendingApplications.push({name:app.tenantName,leaseStart:app.leaseStart,leaseEnd:app.leaseEnd,monthlyRent:app.monthlyRent});} else{property.tenant=app.tenantName; property.rent=app.monthlyRent; property.status='Occupied';}}
   updateDashboard();
 }
 
-/* Update Dashboard */
+// Update Dashboard
 function updateDashboard(){
   document.getElementById('totalProperties').innerText = properties.length;
   const occupiedCount = properties.filter(p=>p.status==='Occupied').length;
@@ -128,7 +135,7 @@ function updateDashboard(){
   updateCharts();
 }
 
-/* Render Properties Table */
+// Properties Table
 function renderPropertiesTable(){
   const propTable=document.querySelector('#propertiesTable tbody');
   propTable.innerHTML='';
@@ -138,18 +145,16 @@ function renderPropertiesTable(){
   });
 }
 
-/* Render Tenants Table */
+// Tenants Table
 function renderTenantsTable(){
   const tenantTable=document.querySelector('#tenantsTable tbody');
   tenantTable.innerHTML='';
   tenants=[];
   properties.forEach(p=>{if(p.status==='Occupied')tenants.push({name:p.tenant,property:p.address,leaseStart:'-',leaseEnd:'-',monthlyRent:p.rent,status:'Active'});});
-  tenants.forEach(t=>{
-    tenantTable.innerHTML+=`<tr><td>${t.name}</td><td>${t.property}</td><td>${t.leaseStart}</td><td>${t.leaseEnd}</td><td>${t.monthlyRent}</td><td><span class="badge bg-success">${t.status}</span></td></tr>`;
-  });
+  tenants.forEach(t=>{tenantTable.innerHTML+=`<tr><td>${t.name}</td><td>${t.property}</td><td>${t.leaseStart}</td><td>${t.leaseEnd}</td><td>${t.monthlyRent}</td><td><span class="badge bg-success">${t.status}</span></td></tr>`;});
 }
 
-/* Update Charts */
+// Update Charts
 function updateCharts(){
   const month=new Date().getMonth();
   rentChart.data.datasets[0].data[month]=tenants.reduce((sum,t)=>sum+t.monthlyRent,0);
@@ -158,7 +163,7 @@ function updateCharts(){
   maintenanceChart.update();
 }
 
-/* Show Pending Applications in Modal */
+// Pending Applications Modal
 function showPendingApps(address){
   const property=properties.find(p=>p.address===address);
   const modalBody=document.getElementById('pendingModalBody');
@@ -179,7 +184,7 @@ function showPendingApps(address){
   new bootstrap.Modal(document.getElementById('pendingModal')).show();
 }
 
-/* Approve / Decline Functions */
+// Approve / Decline
 function approveApplication(address,index){
   const property=properties.find(p=>p.address===address);
   const app=property.pendingApplications.splice(index,1)[0];
@@ -187,17 +192,16 @@ function approveApplication(address,index){
   property.rent=app.monthlyRent;
   property.status='Occupied';
   updateDashboard();
-  showPendingApps(address); // Refresh modal
+  showPendingApps(address);
 }
-
 function declineApplication(address,index){
   const property=properties.find(p=>p.address===address);
   property.pendingApplications.splice(index,1);
   updateDashboard();
-  showPendingApps(address); // Refresh modal
+  showPendingApps(address);
 }
 
-/* Example Applications */
+// Example Applications
 addRentalApplication({propertyAddress:"123 Main St",propertyType:"Apartment",bedrooms:2,bathrooms:1,tenantName:"John Doe",leaseStart:"2025-01-01",leaseEnd:"2026-01-01",monthlyRent:2200});
 addRentalApplication({propertyAddress:"456 Oak Ave",propertyType:"House",bedrooms:3,bathrooms:2});
 addRentalApplication({propertyAddress:"123 Main St",propertyType:"Apartment",bedrooms:2,bathrooms:1,tenantName:"Alice Johnson",leaseStart:"2025-10-01",leaseEnd:"2026-09-30",monthlyRent:2400});
