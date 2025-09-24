@@ -1,421 +1,643 @@
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rental Management Dashboard</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rental Management — Luxe Dashboard</title>
+
+<!-- Fonts + Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; }
-.sidebar { height: 100vh; background: #2c3e50; color: white; padding-top: 20px; width: 180px; transition: width 0.3s; position: fixed; }
-.sidebar.collapsed { width: 50px; }
-.sidebar h2 { text-align: center; font-size: 1.3rem; margin-bottom: 20px; }
-.sidebar a { color: white; display: block; padding: 10px 15px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sidebar a:hover { background: #34495e; }
-.sidebar-link.active { background-color: #34495e; font-weight: bold; }
-.main { margin-left: 180px; transition: margin-left 0.3s; padding: 20px; }
-.main.expanded { margin-left: 50px; }
-.kpi-card { padding: 15px; height: 120px; display: flex; flex-direction: column; justify-content: center; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: white; }
-.kpi-card h5 { font-size: 1rem; margin-bottom: 5px; }
-.kpi-card h2 { font-size: 1.5rem; margin: 0; }
-.card { border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-table th, table td { vertical-align: middle !important; }
-.chart-container { height: 300px; }
-.dashboard-section { display: none; }
-input.search-box { margin-bottom: 10px; }
-.table-striped tbody tr.overdue { background-color: #f8d7da; } 
-.table-striped tbody tr.expiring { background-color: #fff3cd; } 
+:root{
+  --bg-1: #0f1724;       /* deep navy */
+  --bg-2: #0b1320;       /* darker */
+  --glass: rgba(255,255,255,0.06);
+  --glass-2: rgba(255,255,255,0.04);
+  --accent: linear-gradient(90deg,#7b61ff,#3ad0ff);
+  --muted: rgba(255,255,255,0.65);
+  --card-radius: 14px;
+  --shadow-1: 0 8px 30px rgba(2,6,23,0.6);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  min-height:100%;
+  background: radial-gradient(1200px 400px at 10% 10%, rgba(59,45,126,0.18), transparent 10%),
+              radial-gradient(1000px 300px at 90% 90%, rgba(58,208,255,0.06), transparent 10%),
+              linear-gradient(180deg,var(--bg-1),var(--bg-2));
+  color: #e6eef8;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding: 24px;
+}
+
+/* Layout */
+.app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  align-items:start;
+}
+
+.sidebar {
+  position:sticky;
+  top:24px;
+  height: calc(100vh - 48px);
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+  border-radius: var(--card-radius);
+  padding:18px;
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.brand {
+  display:flex; gap:12px; align-items:center; margin-bottom:16px;
+}
+.brand .mark{
+  width:44px;height:44px;border-radius:10px;
+  background:var(--accent); box-shadow:0 6px 20px rgba(123,97,255,0.18);
+  display:flex; align-items:center; justify-content:center; font-weight:800;
+  color:white;
+}
+.brand h3{font-size:16px;margin:0;color:#fff;letter-spacing:0.2px}
+
+/* Sidebar items */
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;margin-bottom:6px;color:var(--muted);cursor:pointer;
+}
+.nav-item:hover{background:rgba(255,255,255,0.02);color:#fff}
+.nav-item.active{background:linear-gradient(90deg, rgba(123,97,255,0.12), rgba(58,208,255,0.03)); color:#fff; box-shadow: inset 0 0 20px rgba(0,0,0,0.25)}
+
+/* Main content area */
+.content {
+  position:relative;
+}
+
+/* Topbar */
+.topbar {
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;
+}
+.topbar .search {
+  background: var(--glass);
+  border-radius: 10px;
+  padding:8px 12px;
+  display:flex; align-items:center; gap:8px; border:1px solid rgba(255,255,255,0.03);
+}
+.topbar input{ background:transparent; border:0; outline:none; color:var(--muted); min-width:220px }
+.topbar .actions button{ margin-left:10px }
+
+/* Dashboard grid */
+.grid {
+  display:grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap:16px;
+}
+
+/* KPI card */
+.kpi {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:12px; padding:16px; box-shadow:0 6px 30px rgba(2,6,23,0.45);
+  border: 1px solid rgba(255,255,255,0.035);
+}
+.kpi h6{ margin:0; font-weight:600; color:rgba(255,255,255,0.85) }
+.kpi .value { font-size:22px; font-weight:800; margin-top:6px }
+.kpi .sub { color:var(--muted); font-size:12px; margin-top:8px }
+
+/* Panels */
+.panel{
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:var(--card-radius);
+  padding:18px;
+  box-shadow:0 10px 40px rgba(2,6,23,0.45);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+/* table styling */
+.table thead th{ background:transparent; border-bottom: 1px solid rgba(255,255,255,0.04); color:var(--muted) }
+.table tbody tr td{ color:#e9f0fb }
+.small-muted{ font-size:12px; color:var(--muted) }
+
+/* Modal overlays — extra luxe */
+.modal-backdrop.show {
+  background-color: rgba(3,6,23,0.6);
+  backdrop-filter: blur(6px);
+}
+.modal-content{
+  background: linear-gradient(180deg, rgba(10,14,30,0.9), rgba(6,10,20,0.85));
+  border: none;
+  color:#dfeeff;
+  border-radius:14px;
+}
+
+/* Buttons */
+.btn-soft{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #eaf5ff;
+}
+
+/* small utilities */
+.badge-soft {
+  background: rgba(255,255,255,0.04);
+  color: #dff4ff;
+  border-radius:10px;
+  padding:6px 10px;
+  font-weight:600;
+}
+
+/* responsive */
+@media (max-width: 1000px){
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position:relative; height:auto; }
+  .main { margin-left:0 }
+}
 </style>
 </head>
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar" id="sidebar">
-  <h2>Rental Dashboard</h2>
-  <a href="#" class="sidebar-link" data-section="sectionOverview">Overview</a>
-  <a href="#" class="sidebar-link" data-section="sectionProperties">Properties</a>
-  <a href="#" class="sidebar-link" data-section="sectionTenants">Tenants</a>
-  <a href="#" class="sidebar-link" id="maintenanceTab">Maintenance</a>
-  <a href="#" class="sidebar-link" data-section="sectionPayments">Payments</a>
-  <button class="btn btn-sm btn-light mt-3 ms-3" id="toggleSidebar">Toggle</button>
+<div class="app container-fluid px-0">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">RM</div>
+      <div>
+        <h3>Cardland Rentals</h3>
+        <div class="small-muted">Management Dashboard</div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="nav-item active" data-section="sectionOverview"><i class="bi bi-speedometer2"></i> Overview</div>
+      <div class="nav-item" data-section="sectionProperties"><i class="bi bi-building"></i> Properties</div>
+      <div class="nav-item" data-section="sectionTenants"><i class="bi bi-people"></i> Tenants</div>
+      <div class="nav-item" id="maintenanceTrigger"><i class="bi bi-wrench"></i> Maintenance</div>
+      <div class="nav-item" data-section="sectionPayments"><i class="bi bi-currency-dollar"></i> Payments</div>
+    </div>
+
+    <hr style="border-color: rgba(255,255,255,0.03)">
+    <div class="small-muted">Quick actions</div>
+    <div class="mt-2 d-grid gap-2">
+      <button class="btn btn-soft btn-sm"><i class="bi bi-plus-lg"></i> New Property</button>
+      <button class="btn btn-soft btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Export Data</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="content">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="search">
+          <i class="bi bi-search" style="opacity:.6"></i>
+          <input id="globalSearch" placeholder="Search tenants, properties..." />
+        </div>
+        <div class="small-muted">Welcome back — <strong>Admin</strong></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-sm btn-soft"><i class="bi bi-bell"></i></button>
+        <button class="btn btn-sm btn-soft"><i class="bi bi-gear"></i></button>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+      <!-- KPIs row -->
+      <div class="kpi panel" style="grid-column: span 3">
+        <h6>Total Properties</h6>
+        <div class="value" id="kpiTotal">0</div>
+        <div class="sub">Active listings across portfolio</div>
+      </div>
+
+      <div class="kpi panel" style="grid-column: span 3">
+        <h6>Occupied</h6>
+        <div class="value" id="kpiOccupied">0</div>
+        <div class="sub">Properties currently leased</div>
+      </div>
+
+      <div class="kpi panel" style="grid-column: span 3">
+        <h6>Vacant</h6>
+        <div class="value" id="kpiVacant">0</div>
+        <div class="sub">Available properties</div>
+      </div>
+
+      <div class="kpi panel" style="grid-column: span 3">
+        <h6>Late Payments</h6>
+        <div class="value" id="kpiLate">0</div>
+        <div class="sub">Tenants with overdue balances</div>
+      </div>
+
+      <!-- Charts -->
+      <div class="panel" style="grid-column: span 7">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h5 style="margin:0">Monthly Rent Collection</h5>
+          <div class="small-muted">Last 12 months</div>
+        </div>
+        <div style="height:300px">
+          <canvas id="chartRent" style="width:100%;height:100%"></canvas>
+        </div>
+      </div>
+
+      <div class="panel" style="grid-column: span 5">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h5 style="margin:0">Maintenance Status</h5>
+          <div class="badge-soft">Live</div>
+        </div>
+        <div style="height:300px;display:flex;align-items:center;justify-content:center">
+          <canvas id="chartMaintenance" style="width:240px;height:240px"></canvas>
+        </div>
+      </div>
+
+      <!-- Tables -->
+      <div class="panel" style="grid-column: span 7">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 style="margin:0">Properties</h5>
+          <div>
+            <input id="searchProperties" class="form-control form-control-sm" placeholder="Search properties..." style="width:240px;display:inline-block" />
+          </div>
+        </div>
+        <div style="max-height:420px;overflow:auto">
+          <table class="table table-borderless table-hover">
+            <thead>
+              <tr class="small-muted">
+                <th>Address</th><th>Type</th><th>Beds</th><th>Baths</th><th>Status</th><th>Tenant</th><th>Rent</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="tblProperties"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="grid-column: span 5">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 style="margin:0">Tenants</h5>
+          <div>
+            <input id="searchTenants" class="form-control form-control-sm" placeholder="Search tenants..." style="width:200px;display:inline-block" />
+          </div>
+        </div>
+        <div style="max-height:420px;overflow:auto">
+          <table class="table table-borderless table-hover">
+            <thead>
+              <tr class="small-muted">
+                <th>Name</th><th>Property</th><th>Lease Ends</th><th>Rent</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="tblTenants"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div> <!-- grid end -->
+
+  </main>
 </div>
 
-<!-- Main Content -->
-<div class="main" id="mainContent">
-  <h1 class="mb-4">Rental Management Dashboard</h1>
-
-  <!-- Overview Section -->
-  <div id="sectionOverview" class="dashboard-section">
-    <div class="row mb-4 g-3">
-      <div class="col-md-3"><div class="kpi-card bg-primary text-center"><h5>Total Properties</h5><h2 id="totalProperties">0</h2></div></div>
-      <div class="col-md-3"><div class="kpi-card bg-success text-center"><h5>Occupied</h5><h2 id="occupiedProperties">0</h2></div></div>
-      <div class="col-md-3"><div class="kpi-card bg-danger text-center"><h5>Vacant</h5><h2 id="vacantProperties">0</h2></div></div>
-      <div class="col-md-3"><div class="kpi-card bg-warning text-center"><h5>Late Payments</h5><h2 id="latePayments">0</h2></div></div>
-    </div>
-    <div class="row mb-4 g-3">
-      <div class="col-md-6">
-        <div class="card p-3"><h5>Monthly Rent Collection ($)</h5><div class="chart-container"><canvas id="rentChart"></canvas></div></div>
+<!-- Maintenance Modal (full-screen style) -->
+<div class="modal fade" id="maintenanceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Maintenance Requests</h5>
+        <div class="small-muted ms-2" id="maintenanceCount"></div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="col-md-6">
-        <div class="card p-3"><h5>Maintenance Requests Status</h5><div class="chart-container"><canvas id="maintenanceChart"></canvas></div></div>
-      </div>
-    </div>
-  </div>
+      <div class="modal-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <input id="searchMaintenance" class="form-control" placeholder="Search issues, tenants, addresses..." style="width:420px" />
+          </div>
+          <div>
+            <button class="btn btn-sm btn-soft" onclick="filterMaintenance('All')">All</button>
+            <button class="btn btn-sm btn-warning" onclick="filterMaintenance('Pending')">Pending</button>
+            <button class="btn btn-sm btn-info" onclick="filterMaintenance('In Progress')">In Progress</button>
+            <button class="btn btn-sm btn-success" onclick="filterMaintenance('Completed')">Completed</button>
+          </div>
+        </div>
 
-  <!-- Properties Section -->
-  <div id="sectionProperties" class="dashboard-section">
-    <input type="text" id="searchProperties" class="form-control search-box" placeholder="Search Properties...">
-    <div class="card p-3 mb-4">
-      <h5>Properties Overview</h5>
-      <table class="table table-striped table-hover mt-3" id="propertiesTable">
-        <thead class="table-dark">
-          <tr>
-            <th>Property</th>
-            <th>Type</th>
-            <th>Bedrooms</th>
-            <th>Bathrooms</th>
-            <th>Status</th>
-            <th>Tenant</th>
-            <th>Rent ($)</th>
-            <th>Pending Applications</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportTableToCSV('properties.csv')">Export CSV</button>
-    </div>
-  </div>
-
-  <!-- Tenants Section -->
-  <div id="sectionTenants" class="dashboard-section">
-    <input type="text" id="searchTenants" class="form-control search-box" placeholder="Search Tenants...">
-    <div class="card p-3 mb-4">
-      <h5>Tenants Overview</h5>
-      <table class="table table-striped table-hover mt-3" id="tenantsTable">
-        <thead class="table-dark">
-          <tr>
-            <th>Name</th>
-            <th>Property</th>
-            <th>Lease Start</th>
-            <th>Lease End</th>
-            <th>Monthly Rent</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <button class="btn btn-sm btn-outline-primary mt-2" onclick="exportTableToCSV('tenants.csv')">Export CSV</button>
-    </div>
-  </div>
-
-  <!-- Payments Section -->
-  <div id="sectionPayments" class="dashboard-section">
-    <div class="card p-3 mb-4">
-      <h5>Payments Overview</h5>
-      <div class="chart-container">
-        <canvas id="paymentsChart"></canvas>
+        <div style="max-height:75vh;overflow:auto">
+          <table class="table table-striped">
+            <thead class="table-dark">
+              <tr><th>ID</th><th>Property</th><th>Tenant</th><th>Description</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="tblMaintenance"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- Tenant Modal -->
 <div class="modal fade" id="tenantModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content p-3">
+      <div class="modal-header border-0">
         <h5 class="modal-title">Tenant Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="tenantModalBody"></div>
     </div>
   </div>
 </div>
 
-<!-- Pending Applications Modal -->
-<div class="modal fade" id="pendingModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Pending Applications</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="pendingModalBody"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Maintenance Modal -->
-<div class="modal fade" id="maintenanceModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">All Maintenance Requests</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="maintenanceModalBody"></div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+/* ---------------- sample data (replace with real) ---------------- */
+let properties = [
+  {address:'123 Main St', type:'Apartment', bedrooms:2, bathrooms:1, status:'Occupied', tenant:'John Doe', rent:2200, pendingApplications:[]},
+  {address:'456 Oak Ave', type:'House', bedrooms:3, bathrooms:2, status:'Vacant', tenant:'', rent:0, pendingApplications:[]},
+  {address:'789 Pine Ln', type:'Condo', bedrooms:2, bathrooms:2, status:'Occupied', tenant:'Jane Smith', rent:2500, pendingApplications:[]},
+];
 
-// ---------------- Sidebar & Sections ----------------
-const sidebar = document.getElementById('sidebar');
-const mainContent = document.getElementById('mainContent');
-document.getElementById('toggleSidebar').addEventListener('click', ()=>{
-  sidebar.classList.toggle('collapsed');
-  mainContent.classList.toggle('expanded');
+let tenants = [
+  {name:'John Doe', property:'123 Main St', leaseStart:'2025-01-01', leaseEnd:'2026-01-01', monthlyRent:2200, status:'Active'},
+  {name:'Jane Smith', property:'789 Pine Ln', leaseStart:'2024-09-01', leaseEnd:'2025-09-01', monthlyRent:2500, status:'Active'}
+];
+
+let maintenanceRequests = [
+  {id:101, property:'123 Main St', tenant:'John Doe', description:'Leaky kitchen faucet - slow drip from pipe under sink', status:'Pending', date:'2025-09-20'},
+  {id:102, property:'789 Pine Ln', tenant:'Jane Smith', description:'AC not cooling on 2nd floor', status:'In Progress', date:'2025-09-18'},
+];
+
+/* ---------------- DOM helpers ---------------- */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+/* ---------------- Chart setup ---------------- */
+const rentCtx = document.getElementById('chartRent').getContext('2d');
+const gradientFill = rentCtx.createLinearGradient(0,0,0,300);
+gradientFill.addColorStop(0, 'rgba(123,97,255,0.28)');
+gradientFill.addColorStop(1, 'rgba(58,208,255,0.03)');
+
+const chartRent = new Chart(rentCtx, {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [{
+      label: 'Rent Collected',
+      data: Array(12).fill(0),
+      fill: true,
+      backgroundColor: gradientFill,
+      borderColor: '#7b61ff',
+      borderWidth: 2.6,
+      pointRadius: 3.5,
+      tension: 0.36,
+    }]
+  },
+  options: {
+    plugins: { legend:{display:false} },
+    scales: {
+      x: { grid: { display:false }, ticks:{ color:'rgba(255,255,255,0.6)'} },
+      y: { grid: { color:'rgba(255,255,255,0.03)' }, ticks:{ color:'rgba(255,255,255,0.6)' } }
+    },
+    responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false}
+  }
 });
 
-const sections = document.querySelectorAll('.dashboard-section');
-const sidebarLinks = document.querySelectorAll('.sidebar-link');
+const maintenanceCtx = document.getElementById('chartMaintenance').getContext('2d');
+const chartMaint = new Chart(maintenanceCtx, {
+  type:'doughnut',
+  data:{
+    labels:['Pending','In Progress','Completed'],
+    datasets:[{data:[0,0,0], backgroundColor:['#f39c12','#3498db','#2ecc71'], hoverOffset:6}]
+  },
+  options:{ plugins:{legend:{labels:{color:'rgba(255,255,255,0.8)'}}}, responsive:true, maintainAspectRatio:false }
+});
 
-function showSection(sectionId){
-  sections.forEach(sec => sec.style.display='none');
-  document.getElementById(sectionId).style.display='block';
-  sidebarLinks.forEach(link=>link.classList.remove('active'));
-  const link = document.querySelector(`.sidebar-link[data-section="${sectionId}"]`);
-  if(link) link.classList.add('active');
+/* ---------------- render functions ---------------- */
+function renderKPIs(){
+  $('#kpiTotal').textContent = properties.length;
+  $('#kpiOccupied').textContent = properties.filter(p=>p.status==='Occupied').length;
+  $('#kpiVacant').textContent = properties.filter(p=>p.status==='Vacant').length;
+  $('#kpiLate').textContent = tenants.filter(t=>t.status==='Late').length || 0;
 }
 
-sidebarLinks.forEach(link=>{
-  link.addEventListener('click', e=>{
-    if(link.id!=='maintenanceTab'){
-      e.preventDefault();
-      showSection(link.getAttribute('data-section'));
+function renderTables(){
+  const tbodyP = $('#tblProperties'); tbodyP.innerHTML='';
+  properties.forEach(p=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="min-width:220px">${p.address}</td>
+      <td>${p.type}</td>
+      <td>${p.bedrooms}</td>
+      <td>${p.bathrooms}</td>
+      <td><span class="badge-soft">${p.status}</span></td>
+      <td>${p.tenant ? `<a href="#" class="text-decoration-none text-info" onclick="openTenant('${p.tenant}')">${p.tenant}</a>` : '-'}</td>
+      <td>$${p.rent.toLocaleString()}</td>
+      <td>${p.pendingApplications.length>0 ? `<button class="btn btn-sm btn-warning" onclick="openPending('${p.address}')">${p.pendingApplications.length} Pending</button>` : '-'}</td>
+    `;
+    tbodyP.appendChild(tr);
+  });
+
+  const tbodyT = $('#tblTenants'); tbodyT.innerHTML='';
+  tenants.forEach(t=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><a href="#" class="text-decoration-none text-info" onclick="openTenant('${t.name}')">${t.name}</a></td>
+      <td>${t.property}</td>
+      <td>${t.leaseEnd}</td>
+      <td>$${t.monthlyRent.toLocaleString()}</td>
+      <td><span class="badge-soft">${t.status}</span></td>
+    `;
+    tbodyT.appendChild(tr);
+  });
+
+  // maintenance table for modal
+  const tbodyM = $('#tblMaintenance'); tbodyM.innerHTML='';
+  maintenanceRequests.forEach((r, i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.id}</td><td>${r.property}</td><td>${r.tenant}</td>
+      <td style="max-width:420px">${r.description}</td>
+      <td>${r.status}</td><td>${r.date}</td>
+      <td>
+        ${r.status!=='In Progress'?`<button class="btn btn-sm btn-warning me-1" onclick="updateMaint(${i}, 'In Progress')">In Progress</button>`:''}
+        ${r.status!=='Completed'?`<button class="btn btn-sm btn-success" onclick="updateMaint(${i}, 'Completed')">Completed</button>`:''}
+      </td>
+    `;
+    tbodyM.appendChild(tr);
+  });
+
+  $('#maintenanceCount').textContent = `${maintenanceRequests.length} requests`;
+}
+
+/* ---------------- charts update ---------------- */
+function refreshCharts(){
+  // rent chart: naive example — sum monthly rents to current month
+  const monthly = Array(12).fill(0);
+  const monthNow = new Date().getMonth();
+  // distribute each tenant's rent to current month only for demo
+  monthly[monthNow] = tenants.reduce((s,t)=>s + (t.status!=='Late' ? t.monthlyRent : 0), 0);
+  chartRent.data.datasets[0].data = monthly;
+  chartRent.update();
+
+  // maintenance
+  const pending = maintenanceRequests.filter(r=>r.status==='Pending').length;
+  const inprogress = maintenanceRequests.filter(r=>r.status==='In Progress').length;
+  const complete = maintenanceRequests.filter(r=>r.status==='Completed').length;
+  chartMaint.data.datasets[0].data = [pending, inprogress, complete];
+  chartMaint.update();
+}
+
+/* ---------------- modal helpers ---------------- */
+function openMaintenanceModal(){
+  const modal = new bootstrap.Modal($('#maintenanceModal'));
+  modal.show();
+  // render already done by renderTables
+}
+function openTenant(name){
+  const tenant = tenants.find(t=>t.name===name);
+  if(!tenant) return;
+  const body = $('#tenantModalBody');
+  body.innerHTML = `
+    <div class="row gx-4">
+      <div class="col-md-6">
+        <h5 style="margin-top:0">${tenant.name}</h5>
+        <div class="small-muted">Contact</div>
+        <p>Phone: (555) 123-4567<br>Email: ${tenant.name.toLowerCase().replace(' ','.')}@example.com</p>
+        <div class="small-muted">Lease</div>
+        <p>Start: ${tenant.leaseStart}<br>End: ${tenant.leaseEnd}</p>
+      </div>
+      <div class="col-md-6">
+        <h6>Financial</h6>
+        <p>Monthly Rent: <strong>$${tenant.monthlyRent.toLocaleString()}</strong></p>
+        <p>Status: <span class="badge-soft">${tenant.status}</span></p>
+        <h6 class="mt-3">Maintenance</h6>
+        <div>${maintenanceRequests.filter(r=>r.tenant===tenant.name).map(r=>`<div style="margin-bottom:6px"><strong>${r.description}</strong><div class="small-muted">${r.date} • ${r.status}</div></div>`).join('') || '<div class="small-muted">No requests</div>'}</div>
+      </div>
+    </div>
+  `;
+  new bootstrap.Modal($('#tenantModal')).show();
+}
+
+function openPending(address){
+  // show a small modal or route — here we use tenant modal to keep simple
+  const property = properties.find(p=>p.address===address);
+  if(!property) return;
+  const body = $('#tenantModalBody');
+  body.innerHTML = `<h5>Pending Applications - ${address}</h5>`;
+  if(!property.pendingApplications.length) body.innerHTML += '<p class="small-muted">No pending applications</p>';
+  else{
+    let html = '<div class="list-group">';
+    property.pendingApplications.forEach((a,i)=>{
+      html += `<div class="list-group-item d-flex justify-content-between align-items-center">
+        <div><strong>${a.name}</strong><div class="small-muted">Lease: ${a.leaseStart} — ${a.leaseEnd}</div></div>
+        <div><button class="btn btn-sm btn-success me-1" onclick="approvePending('${address}',${i})">Approve</button><button class="btn btn-sm btn-danger" onclick="declinePending('${address}',${i})">Decline</button></div>
+      </div>`;
+    });
+    html += `</div>`;
+    body.innerHTML += html;
+  }
+  new bootstrap.Modal($('#tenantModal')).show();
+}
+
+/* ---------------- actions ---------------- */
+function updateMaint(i, status){
+  maintenanceRequests[i].status = status;
+  renderTables(); refreshCharts();
+}
+
+function approvePending(address, idx){
+  const prop = properties.find(p=>p.address===address);
+  const app = prop.pendingApplications.splice(idx,1)[0];
+  prop.status='Occupied'; prop.tenant = app.name; prop.rent = app.monthlyRent;
+  tenants.push({ name: app.name, property: address, leaseStart: app.leaseStart||new Date().toISOString().slice(0,10), leaseEnd: app.leaseEnd||'', monthlyRent: app.monthlyRent, status:'Active' });
+  renderTables(); refreshCharts();
+}
+
+function declinePending(address, idx){
+  const prop = properties.find(p=>p.address===address);
+  prop.pendingApplications.splice(idx,1);
+  renderTables();
+}
+
+/* ---------------- searching + filtering ---------------- */
+$('#searchProperties').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  $$('#tblProperties tr').forEach(tr=>{
+    tr.style.display = Array.from(tr.cells).some(td=>td.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+});
+$('#searchTenants').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  $$('#tblTenants tr').forEach(tr=>{
+    tr.style.display = Array.from(tr.cells).some(td=>td.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+});
+$('#searchMaintenance')?.addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  $$('#tblMaintenance tr').forEach(tr=>{
+    tr.style.display = Array.from(tr.cells).some(td=>td.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+});
+
+/* filter for maintenance modal */
+function filterMaintenance(status){
+  $$('#tblMaintenance tr').forEach(tr=>{
+    if(status==='All') tr.style.display='';
+    else tr.style.display = tr.cells[4].textContent === status ? '' : 'none';
+  });
+}
+
+/* global search: quick focus on matched section */
+$('#globalSearch').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){
+    const q = e.target.value.toLowerCase();
+    // quick heuristic: search tenants first, then properties
+    const t = tenants.find(t=>t.name.toLowerCase().includes(q));
+    if(t){ openTenant(t.name); return; }
+    const p = properties.find(p=>p.address.toLowerCase().includes(q));
+    if(p){ openPending(p.address); return; }
+    alert('No quick matches found.');
+  }
+});
+
+/* sidebar interactions */
+$$('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    $$('.nav-item').forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    const section = item.getAttribute('data-section');
+    if(section){
+      // show section areas — here: map custom to original smaller app sections
+      showSection(section);
+    } else if(item.id === 'maintenanceTrigger'){
+      openMaintenanceModal();
     }
   });
 });
 
-showSection('sectionProperties');
-
-// ---------------- Charts ----------------
-const rentCtx = document.getElementById('rentChart').getContext('2d');
-const rentChart = new Chart(rentCtx, {type:'line', data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets:[{label:'Rent Collected', data:Array(12).fill(0), backgroundColor:'rgba(39,174,96,0.2)', borderColor:'rgba(39,174,96,1)', borderWidth:2, fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:'rgba(39,174,96,1)'}]}, options:{responsive:true, maintainAspectRatio:false}});
-
-const maintenanceCtx = document.getElementById('maintenanceChart').getContext('2d');
-const maintenanceChart = new Chart(maintenanceCtx, {type:'doughnut', data:{labels:['Pending','In Progress','Completed'], datasets:[{label:'Maintenance Status', data:[0,0,0], backgroundColor:['#e74c3c','#f1c40f','#2ecc71']}]}, options:{responsive:true, maintainAspectRatio:false}});
-
-// ---------------- Sample Data ----------------
-let properties = [
-  {address:"123 Main St",type:"Apartment",bedrooms:2,bathrooms:1,status:"Occupied",tenant:"John Doe",rent:2200,pendingApplications:[{name:"Alice Johnson",leaseStart:"2025-10-01",leaseEnd:"2026-09-30",monthlyRent:2400}]},
-  {address:"456 Oak Ave",type:"House",bedrooms:3,bathrooms:2,status:"Vacant",tenant:"",rent:0,pendingApplications:[]},
-  {address:"789 Pine Ln",type:"Condo",bedrooms:2,bathrooms:2,status:"Occupied",tenant:"Jane Smith",rent:2500,pendingApplications:[]}
-];
-
-let tenants = [];
-let maintenanceRequests = [
-  {id:1,property:"123 Main St",tenant:"John Doe",description:"Leaky faucet",status:"Pending",date:"2025-09-20"},
-  {id:2,property:"789 Pine Ln",tenant:"Jane Smith",description:"Broken AC",status:"In Progress",date:"2025-09-18"}
-];
-
-// ---------------- Dashboard Update ----------------
-function updateDashboard(){
-  document.getElementById('totalProperties').innerText = properties.length;
-  const occupiedCount = properties.filter(p=>p.status==='Occupied').length;
-  document.getElementById('occupiedProperties').innerText = occupiedCount;
-  document.getElementById('vacantProperties').innerText = properties.length - occupiedCount;
-  document.getElementById('latePayments').innerText = 0; // Placeholder
-
-  renderPropertiesTable();
-  renderTenantsTable();
-  updateCharts();
-}
-
-// ---------------- Render Properties Table ----------------
-function renderPropertiesTable(){
-  const tbody = document.querySelector('#propertiesTable tbody');
-  tbody.innerHTML = '';
-  properties.forEach(p=>{
-    const pendingBtn = p.pendingApplications.length>0 ? `<button class="btn btn-sm btn-info" onclick="showPendingApps('${p.address}')">View Pending (${p.pendingApplications.length})</button>` : '-';
-    tbody.innerHTML += `<tr>
-      <td>${p.address}</td>
-      <td>${p.type}</td>
-      <td>${p.bedrooms}</td>
-      <td>${p.bathrooms}</td>
-      <td><span class="badge bg-${p.status==='Occupied'?'success':'danger'}">${p.status}</span></td>
-      <td><a href="#" onclick="showTenantInfo('${p.tenant}')">${p.tenant || '-'}</a></td>
-      <td>${p.rent}</td>
-      <td>${pendingBtn}</td>
-    </tr>`;
-  });
-}
-
-// ---------------- Render Tenants Table ----------------
-function renderTenantsTable(){
-  const tbody = document.querySelector('#tenantsTable tbody');
-  tbody.innerHTML = '';
-  tenants = [];
-  properties.forEach(p=>{
-    if(p.status==='Occupied') tenants.push({name:p.tenant, property:p.address, leaseStart:'-', leaseEnd:'-', monthlyRent:p.rent, status:'Active'});
-  });
-  tenants.forEach(t=>{
-    tbody.innerHTML += `<tr>
-      <td><a href="#" onclick="showTenantInfo('${t.name}')">${t.name}</a></td>
-      <td>${t.property}</td>
-      <td>${t.leaseStart}</td>
-      <td>${t.leaseEnd}</td>
-      <td>${t.monthlyRent}</td>
-      <td><span class="badge bg-success">${t.status}</span></td>
-    </tr>`;
-  });
-}
-
-// ---------------- Update Charts ----------------
-function updateCharts(){
-  const month = new Date().getMonth();
-  rentChart.data.datasets[0].data[month] = tenants.reduce((sum,t)=>sum+t.monthlyRent,0);
-  rentChart.update();
-
-  const pendingCount = maintenanceRequests.filter(r=>r.status==='Pending').length;
-  const inProgressCount = maintenanceRequests.filter(r=>r.status==='In Progress').length;
-  const completedCount = maintenanceRequests.filter(r=>r.status==='Completed').length;
-  maintenanceChart.data.datasets[0].data = [pendingCount,inProgressCount,completedCount];
-  maintenanceChart.update();
-}
-
-// ---------------- Pending Applications Modal ----------------
-function showPendingApps(address){
-  const property = properties.find(p=>p.address===address);
-  const modalBody = document.getElementById('pendingModalBody');
-  modalBody.innerHTML = '';
-  if(!property || property.pendingApplications.length===0){
-    modalBody.innerHTML = '<p>No pending applications.</p>';
-  } else {
-    property.pendingApplications.forEach((app,i)=>{
-      const div = document.createElement('div');
-      div.classList.add('d-flex','justify-content-between','align-items-center','mb-2');
-      div.innerHTML = `<span>${app.name} | Lease: ${app.leaseStart} - ${app.leaseEnd} | Rent: $${app.monthlyRent}</span>
-      <div>
-        <button class="btn btn-sm btn-success me-2" onclick="approveApp(${i}, '${property.address}')">Approve</button>
-        <button class="btn btn-sm btn-danger" onclick="declineApp(${i}, '${property.address}')">Decline</button>
-      </div>`;
-      modalBody.appendChild(div);
-    });
+function showSection(id){
+  // in this condensed UI we only hide/show content in main area — simple approach
+  // sections: sectionOverview, sectionProperties, sectionTenants, sectionPayments
+  if(id === 'sectionOverview'){
+    // scroll to top (overview is the default area in our layout)
+    window.scrollTo({top:0,behavior:'smooth'});
+  } else if(id === 'sectionProperties'){
+    // focus properties
+    $('#searchProperties').focus();
+  } else if(id === 'sectionTenants'){
+    $('#searchTenants').focus();
+  } else if(id === 'sectionPayments'){
+    // optional: focus chart
+    document.getElementById('chartRent').scrollIntoView({behavior:'smooth'});
   }
-  new bootstrap.Modal(document.getElementById('pendingModal')).show();
 }
 
-function approveApp(index, address){
-  const property = properties.find(p=>p.address===address);
-  const app = property.pendingApplications.splice(index,1)[0];
-  property.tenant = app.name;property.status = 'Occupied';
-  property.rent = app.monthlyRent;
-  updateDashboard();
-  showPendingApps(address);
+/* ---------------- init ---------------- */
+function init(){
+  renderKPIs();
+  renderTables();
+  refreshCharts();
 }
-
-function declineApp(index, address){
-  const property = properties.find(p=>p.address===address);
-  property.pendingApplications.splice(index,1);
-  showPendingApps(address);
-  updateDashboard();
-}
-
-// ---------------- Tenant Modal ----------------
-function showTenantInfo(tenantName){
-  if(!tenantName) return;
-  const tenant = tenants.find(t=>t.name === tenantName);
-  if(!tenant) return;
-  const modalBody = document.getElementById('tenantModalBody');
-  modalBody.innerHTML = `
-    <p><strong>Name:</strong> ${tenant.name}</p>
-    <p><strong>Property:</strong> ${tenant.property}</p>
-    <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
-    <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
-    <p><strong>Monthly Rent:</strong> $${tenant.monthlyRent}</p>
-    <p><strong>Status:</strong> ${tenant.status}</p>
-    <p><strong>Maintenance Requests:</strong> ${
-      maintenanceRequests.filter(r=>r.tenant===tenant.name).map(r=>`${r.description} (${r.status})`).join('<br>') || 'None'
-    }</p>
-  `;
-  new bootstrap.Modal(document.getElementById('tenantModal')).show();
-}
-
-// ---------------- Maintenance Modal ----------------
-document.getElementById('maintenanceTab').addEventListener('click', ()=>{
-  const modalBody = document.getElementById('maintenanceModalBody');
-  modalBody.innerHTML = '';
-  if(maintenanceRequests.length===0){
-    modalBody.innerHTML = '<p>No maintenance requests.</p>';
-  } else {
-    const table = document.createElement('table');
-    table.classList.add('table','table-striped','table-hover');
-    table.innerHTML = `<thead class="table-dark">
-      <tr>
-        <th>ID</th>
-        <th>Property</th>
-        <th>Tenant</th>
-        <th>Description</th>
-        <th>Status</th>
-        <th>Date Submitted</th>
-        <th>Actions</th>
-      </tr>
-    </thead><tbody></tbody>`;
-    maintenanceRequests.forEach((r,i)=>{
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${r.id}</td>
-        <td>${r.property}</td>
-        <td>${r.tenant}</td>
-        <td>${r.description}</td>
-        <td>${r.status}</td>
-        <td>${r.date}</td>
-        <td>
-          ${r.status!=='In Progress'?`<button class="btn btn-sm btn-warning me-1" onclick="updateMaintenanceStatus(${i},'In Progress')">In Progress</button>`:''}
-          ${r.status!=='Completed'?`<button class="btn btn-sm btn-success" onclick="updateMaintenanceStatus(${i},'Completed')">Completed</button>`:''}
-        </td>
-      `;
-      table.querySelector('tbody').appendChild(row);
-    });
-    modalBody.appendChild(table);
-  }
-  new bootstrap.Modal(document.getElementById('maintenanceModal')).show();
-});
-
-function updateMaintenanceStatus(index, status){
-  maintenanceRequests[index].status = status;
-  updateDashboard();
-  document.getElementById('maintenanceTab').click();
-}
-
-// ---------------- Search ----------------
-document.getElementById('searchProperties').addEventListener('input', e=>{
-  const term = e.target.value.toLowerCase();
-  document.querySelectorAll('#propertiesTable tbody tr').forEach(tr=>{
-    tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(term)) ? '' : 'none';
-  });
-});
-
-document.getElementById('searchTenants').addEventListener('input', e=>{
-  const term = e.target.value.toLowerCase();
-  document.querySelectorAll('#tenantsTable tbody tr').forEach(tr=>{
-    tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(term)) ? '' : 'none';
-  });
-});
-
-// ---------------- CSV Export ----------------
-function exportTableToCSV(filename){
-  let csv = '';
-  const table = document.querySelector('#propertiesTable') || document.querySelector('#tenantsTable');
-  const rows = table.querySelectorAll('tr');
-  rows.forEach(row=>{
-    const cols = row.querySelectorAll('td, th');
-    csv += Array.from(cols).map(td=>td.innerText.replace(/,/g,'')).join(',') + '\n';
-  });
-  const blob = new Blob([csv], {type:'text/csv'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-}
-
-// ---------------- Initialize ----------------
-updateDashboard();
+init();
 
 </script>
 </body>
