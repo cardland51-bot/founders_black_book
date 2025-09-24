@@ -1,4 +1,3 @@
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -24,8 +23,8 @@ table th, table td { vertical-align: middle !important; }
 .chart-container { height: 300px; }
 .dashboard-section { display: none; }
 input.search-box { margin-bottom: 10px; }
-.table-striped tbody tr.overdue { background-color: #f8d7da; } /* overdue rent */
-.table-striped tbody tr.expiring { background-color: #fff3cd; } /* lease expiring soon */
+.table-striped tbody tr.overdue { background-color: #f8d7da; } 
+.table-striped tbody tr.expiring { background-color: #fff3cd; } 
 </style>
 </head>
 <body>
@@ -36,8 +35,8 @@ input.search-box { margin-bottom: 10px; }
   <a href="#" class="sidebar-link" data-section="sectionOverview">Overview</a>
   <a href="#" class="sidebar-link" data-section="sectionProperties">Properties</a>
   <a href="#" class="sidebar-link" data-section="sectionTenants">Tenants</a>
+  <a href="#" class="sidebar-link" id="maintenanceTab">Maintenance</a>
   <a href="#" class="sidebar-link" data-section="sectionPayments">Payments</a>
-  <a href="#" class="sidebar-link" data-section="sectionMaintenance">Maintenance</a>
   <button class="btn btn-sm btn-light mt-3 ms-3" id="toggleSidebar">Toggle</button>
 </div>
 
@@ -71,13 +70,13 @@ input.search-box { margin-bottom: 10px; }
       <table class="table table-striped table-hover mt-3" id="propertiesTable">
         <thead class="table-dark">
           <tr>
-            <th data-sort="address">Property</th>
-            <th data-sort="type">Type</th>
-            <th data-sort="bedrooms">Bedrooms</th>
-            <th data-sort="bathrooms">Bathrooms</th>
-            <th data-sort="status">Status</th>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Bedrooms</th>
+            <th>Bathrooms</th>
+            <th>Status</th>
             <th>Tenant</th>
-            <th data-sort="rent">Rent ($)</th>
+            <th>Rent ($)</th>
             <th>Pending Applications</th>
           </tr>
         </thead>
@@ -95,11 +94,11 @@ input.search-box { margin-bottom: 10px; }
       <table class="table table-striped table-hover mt-3" id="tenantsTable">
         <thead class="table-dark">
           <tr>
-            <th data-sort="name">Name</th>
-            <th data-sort="property">Property</th>
-            <th data-sort="leaseStart">Lease Start</th>
-            <th data-sort="leaseEnd">Lease End</th>
-            <th data-sort="monthlyRent">Monthly Rent</th>
+            <th>Name</th>
+            <th>Property</th>
+            <th>Lease Start</th>
+            <th>Lease End</th>
+            <th>Monthly Rent</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -119,16 +118,19 @@ input.search-box { margin-bottom: 10px; }
     </div>
   </div>
 
-  <!-- Maintenance Section -->
-  <div id="sectionMaintenance" class="dashboard-section">
-    <div class="card p-3 mb-4">
-      <h5>Maintenance Overview</h5>
-      <div class="chart-container">
-        <canvas id="maintenanceOverviewChart"></canvas>
+</div>
+
+<!-- Tenant Modal -->
+<div class="modal fade" id="tenantModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tenant Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+      <div class="modal-body" id="tenantModalBody"></div>
     </div>
   </div>
-
 </div>
 
 <!-- Pending Applications Modal -->
@@ -140,6 +142,19 @@ input.search-box { margin-bottom: 10px; }
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="pendingModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Maintenance Modal -->
+<div class="modal fade" id="maintenanceModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">All Maintenance Requests</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="maintenanceModalBody"></div>
     </div>
   </div>
 </div>
@@ -163,13 +178,16 @@ function showSection(sectionId){
   sections.forEach(sec => sec.style.display='none');
   document.getElementById(sectionId).style.display='block';
   sidebarLinks.forEach(link=>link.classList.remove('active'));
-  document.querySelector(`.sidebar-link[data-section="${sectionId}"]`).classList.add('active');
+  const link = document.querySelector(`.sidebar-link[data-section="${sectionId}"]`);
+  if(link) link.classList.add('active');
 }
 
 sidebarLinks.forEach(link=>{
   link.addEventListener('click', e=>{
-    e.preventDefault();
-    showSection(link.getAttribute('data-section'));
+    if(link.id!=='maintenanceTab'){
+      e.preventDefault();
+      showSection(link.getAttribute('data-section'));
+    }
   });
 });
 
@@ -177,7 +195,8 @@ showSection('sectionProperties');
 
 // ---------------- Charts ----------------
 const rentCtx = document.getElementById('rentChart').getContext('2d');
-const rentChart = new Chart(rentCtx, {type:'line', data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets:[{label:'Rent Collected', data:Array(12).fill(0), backgroundColor:'rgba(39,174,96,0.2)', borderColor:'rgba(39,174,96,1)', borderWidth:2, fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:''rgba(39,174,96,1)'}]}, options:{responsive:true, maintainAspectRatio:false}});
+const rentChart = new Chart(rentCtx, {type:'line', data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], datasets:[{label:'Rent Collected', data:Array(12).fill(0), backgroundColor:'rgba(39,174,96,0.2)', borderColor:'rgba(39,174,96,1)', borderWidth:2, fill:true, tension:0.4, pointRadius:5, pointBackgroundColor:'rgba(39,174,96,1)'}]}, options:{responsive:true, maintainAspectRatio:false}});
+
 const maintenanceCtx = document.getElementById('maintenanceChart').getContext('2d');
 const maintenanceChart = new Chart(maintenanceCtx, {type:'doughnut', data:{labels:['Pending','In Progress','Completed'], datasets:[{label:'Maintenance Status', data:[0,0,0], backgroundColor:['#e74c3c','#f1c40f','#2ecc71']}]}, options:{responsive:true, maintainAspectRatio:false}});
 
@@ -187,7 +206,12 @@ let properties = [
   {address:"456 Oak Ave",type:"House",bedrooms:3,bathrooms:2,status:"Vacant",tenant:"",rent:0,pendingApplications:[]},
   {address:"789 Pine Ln",type:"Condo",bedrooms:2,bathrooms:2,status:"Occupied",tenant:"Jane Smith",rent:2500,pendingApplications:[]}
 ];
+
 let tenants = [];
+let maintenanceRequests = [
+  {id:1,property:"123 Main St",tenant:"John Doe",description:"Leaky faucet",status:"Pending",date:"2025-09-20"},
+  {id:2,property:"789 Pine Ln",tenant:"Jane Smith",description:"Broken AC",status:"In Progress",date:"2025-09-18"}
+];
 
 // ---------------- Dashboard Update ----------------
 function updateDashboard(){
@@ -195,7 +219,7 @@ function updateDashboard(){
   const occupiedCount = properties.filter(p=>p.status==='Occupied').length;
   document.getElementById('occupiedProperties').innerText = occupiedCount;
   document.getElementById('vacantProperties').innerText = properties.length - occupiedCount;
-  document.getElementById('latePayments').innerText = 0; // Add overdue logic later
+  document.getElementById('latePayments').innerText = 0; // Placeholder
 
   renderPropertiesTable();
   renderTenantsTable();
@@ -214,7 +238,7 @@ function renderPropertiesTable(){
       <td>${p.bedrooms}</td>
       <td>${p.bathrooms}</td>
       <td><span class="badge bg-${p.status==='Occupied'?'success':'danger'}">${p.status}</span></td>
-      <td>${p.tenant || '-'}</td>
+      <td><a href="#" onclick="showTenantInfo('${p.tenant}')">${p.tenant || '-'}</a></td>
       <td>${p.rent}</td>
       <td>${pendingBtn}</td>
     </tr>`;
@@ -231,7 +255,7 @@ function renderTenantsTable(){
   });
   tenants.forEach(t=>{
     tbody.innerHTML += `<tr>
-      <td>${t.name}</td>
+      <td><a href="#" onclick="showTenantInfo('${t.name}')">${t.name}</a></td>
       <td>${t.property}</td>
       <td>${t.leaseStart}</td>
       <td>${t.leaseEnd}</td>
@@ -247,7 +271,10 @@ function updateCharts(){
   rentChart.data.datasets[0].data[month] = tenants.reduce((sum,t)=>sum+t.monthlyRent,0);
   rentChart.update();
 
-  maintenanceChart.data.datasets[0].data = [0,0,0]; // Placeholder
+  const pendingCount = maintenanceRequests.filter(r=>r.status==='Pending').length;
+  const inProgressCount = maintenanceRequests.filter(r=>r.status==='In Progress').length;
+  const completedCount = maintenanceRequests.filter(r=>r.status==='Completed').length;
+  maintenanceChart.data.datasets[0].data = [pendingCount,inProgressCount,completedCount];
   maintenanceChart.update();
 }
 
@@ -273,12 +300,10 @@ function showPendingApps(address){
   new bootstrap.Modal(document.getElementById('pendingModal')).show();
 }
 
-// ---------------- Approve / Decline Functions ----------------
 function approveApp(index, address){
   const property = properties.find(p=>p.address===address);
   const app = property.pendingApplications.splice(index,1)[0];
-  property.tenant = app.name;
-  property.status = 'Occupied';
+  property.tenant = app.name;property.status = 'Occupied';
   property.rent = app.monthlyRent;
   updateDashboard();
   showPendingApps(address);
@@ -291,13 +316,81 @@ function declineApp(index, address){
   updateDashboard();
 }
 
-// ---------------- Search Functionality ----------------
+// ---------------- Tenant Modal ----------------
+function showTenantInfo(tenantName){
+  if(!tenantName) return;
+  const tenant = tenants.find(t=>t.name === tenantName);
+  if(!tenant) return;
+  const modalBody = document.getElementById('tenantModalBody');
+  modalBody.innerHTML = `
+    <p><strong>Name:</strong> ${tenant.name}</p>
+    <p><strong>Property:</strong> ${tenant.property}</p>
+    <p><strong>Lease Start:</strong> ${tenant.leaseStart}</p>
+    <p><strong>Lease End:</strong> ${tenant.leaseEnd}</p>
+    <p><strong>Monthly Rent:</strong> $${tenant.monthlyRent}</p>
+    <p><strong>Status:</strong> ${tenant.status}</p>
+    <p><strong>Maintenance Requests:</strong> ${
+      maintenanceRequests.filter(r=>r.tenant===tenant.name).map(r=>`${r.description} (${r.status})`).join('<br>') || 'None'
+    }</p>
+  `;
+  new bootstrap.Modal(document.getElementById('tenantModal')).show();
+}
+
+// ---------------- Maintenance Modal ----------------
+document.getElementById('maintenanceTab').addEventListener('click', ()=>{
+  const modalBody = document.getElementById('maintenanceModalBody');
+  modalBody.innerHTML = '';
+  if(maintenanceRequests.length===0){
+    modalBody.innerHTML = '<p>No maintenance requests.</p>';
+  } else {
+    const table = document.createElement('table');
+    table.classList.add('table','table-striped','table-hover');
+    table.innerHTML = `<thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Property</th>
+        <th>Tenant</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Date Submitted</th>
+        <th>Actions</th>
+      </tr>
+    </thead><tbody></tbody>`;
+    maintenanceRequests.forEach((r,i)=>{
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${r.id}</td>
+        <td>${r.property}</td>
+        <td>${r.tenant}</td>
+        <td>${r.description}</td>
+        <td>${r.status}</td>
+        <td>${r.date}</td>
+        <td>
+          ${r.status!=='In Progress'?`<button class="btn btn-sm btn-warning me-1" onclick="updateMaintenanceStatus(${i},'In Progress')">In Progress</button>`:''}
+          ${r.status!=='Completed'?`<button class="btn btn-sm btn-success" onclick="updateMaintenanceStatus(${i},'Completed')">Completed</button>`:''}
+        </td>
+      `;
+      table.querySelector('tbody').appendChild(row);
+    });
+    modalBody.appendChild(table);
+  }
+  new bootstrap.Modal(document.getElementById('maintenanceModal')).show();
+});
+
+function updateMaintenanceStatus(index, status){
+  maintenanceRequests[index].status = status;
+  updateDashboard();
+  document.getElementById('maintenanceTab').click();
+}
+
+// ---------------- Search ----------------
 document.getElementById('searchProperties').addEventListener('input', e=>{
   const term = e.target.value.toLowerCase();
   document.querySelectorAll('#propertiesTable tbody tr').forEach(tr=>{
     tr.style.display = Array.from(tr.children).some(td=>td.textContent.toLowerCase().includes(term)) ? '' : 'none';
   });
 });
+
 document.getElementById('searchTenants').addEventListener('input', e=>{
   const term = e.target.value.toLowerCase();
   document.querySelectorAll('#tenantsTable tbody tr').forEach(tr=>{
@@ -321,7 +414,7 @@ function exportTableToCSV(filename){
   link.click();
 }
 
-// ---------------- Initialize Dashboard ----------------
+// ---------------- Initialize ----------------
 updateDashboard();
 
 </script>
