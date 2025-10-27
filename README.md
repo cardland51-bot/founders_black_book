@@ -37,6 +37,7 @@ p {
     position: relative;
     width: 100%;
     max-width: 1200px;
+    margin-bottom: 40px;
 }
 
 .node {
@@ -134,7 +135,6 @@ button.run-btn:hover { background: #e59e20; box-shadow: 0 0 30px rgba(245,166,35
 <button class="run-btn" onclick="runSimulation()">Generate Trend Score</button>
 <div class="output" id="output">Awaiting calculation...</div>
 <canvas id="connectionCanvas" class="canvas-connection"></canvas>
-<div id="pipeline-wrapper"></div>
 <div id="popup" class="popup"></div>
 
 <!-- Sections -->
@@ -158,7 +158,7 @@ button.run-btn:hover { background: #e59e20; box-shadow: 0 0 30px rgba(245,166,35
 </div>
 
 <script>
-// Modules with authentic equation formatting
+// Modules with authentic equations
 const modules = [
     {id:'data', title:'Data Collection', content:'Aggregates social signals, engagement metrics, and external trends.', eq:'D = Σ(SocialSignals + EngagementMetrics + ExternalTrends)'},
     {id:'feature', title:'Feature Engineering', content:'Engagement velocity, community resonance, novelty score, format efficiency, propagation potential.', eq:'F = w₁·Velocity + w₂·Resonance + w₃·Novelty + w₄·Format + w₅·Propagation'},
@@ -171,23 +171,31 @@ const modules = [
 const moduleElements = {};
 const popup=document.getElementById('popup');
 
-// Create nodes with click showing equation
+// Create nodes with mobile-friendly popup
 function createModule(node){
     const div=document.createElement('div');
     div.className='node';
     div.id=node.id;
     div.innerHTML=`<div class="node-title">${node.title}</div><div class="node-content">${node.content}</div>`;
-    div.onclick=(e)=>{
-        popup.innerHTML=`<strong>Equation:</strong><br>${node.eq}`;
-        const rect=div.getBoundingClientRect();
-        let left=rect.right+10;
-        let top=rect.top;
-        if(left + 280 > window.innerWidth) left=rect.left - 290; // prevent overflow
-        popup.style.left=left+'px';
-        popup.style.top=top+'px';
-        popup.style.opacity=1;
+    
+    const showPopup = () => {
+        popup.innerHTML = `<strong>Equation:</strong><br>${node.eq}`;
+        const rect = div.getBoundingClientRect();
+        let top = rect.bottom + window.scrollY + 8; // below node
+        let left = rect.left + window.scrollX;
+        const maxWidth = 280;
+        if(left + maxWidth > window.innerWidth){
+            left = window.innerWidth - maxWidth - 10;
+        }
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+        popup.style.opacity = 1;
         setTimeout(()=>{popup.style.opacity=0;},4000);
     };
+    
+    div.addEventListener('click', showPopup);
+    div.addEventListener('touchstart', showPopup);
+    
     document.getElementById('pipeline-wrapper').appendChild(div);
     moduleElements[node.id]=div;
 }
@@ -199,6 +207,7 @@ const ctx=canvas.getContext('2d');
 function resizeCanvas(){canvas.width=window.innerWidth; canvas.height=window.innerHeight;}
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
 function drawConnections(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
     for(let i=0;i<modules.length-1;i++){
@@ -222,38 +231,41 @@ function spawnEquation(module){
     eq.className='node-content';
     eq.style.position='absolute';
     const rect=moduleElements[module].getBoundingClientRect();
-    eq.style.left=(rect.left+Math.random()*rect.width)+'px';
-    eq.style.top=(rect.top+Math.random()*rect.height)+'px';
-    eq.style.color='rgba(245,166,35,0.3)';
-    eq.style.fontSize='14px';
-    eq.textContent=eqs[Math.floor(Math.random()*eqs.length)];
+    eq.style.left = (rect.left + Math.random() * rect.width) + 'px';
+    eq.style.top = (rect.top + Math.random() * rect.height) + 'px';
+    eq.style.color = 'rgba(245,166,35,0.3)';
+    eq.style.fontSize = '14px';
+    eq.textContent = eqs[Math.floor(Math.random() * eqs.length)];
     document.body.appendChild(eq);
-    let dy=-0.5-Math.random();
-    function animate(){
-        const top=parseFloat(eq.style.top);
-        if(top<rect.top-50){eq.remove();return;}
-        eq.style.top=(top+dy)+'px';
+
+    let dy = -0.5 - Math.random(); // float upwards
+    function animate() {
+        const top = parseFloat(eq.style.top);
+        if (top < rect.top - 50) { eq.remove(); return; }
+        eq.style.top = (top + dy) + 'px';
         requestAnimationFrame(animate);
     }
     animate();
 }
 
 // Run simulation
-function runSimulation(){
-    const output=document.getElementById('output');
-    output.textContent='Calculating...';
-    const interval=setInterval(()=>{
-        modules.slice(1,modules.length-1).forEach(m=>spawnEquation(m.id));
-    },200);
-    setTimeout(()=>{
+function runSimulation() {
+    const output = document.getElementById('output');
+    output.textContent = 'Calculating...';
+    const interval = setInterval(() => {
+        modules.slice(1, modules.length - 1).forEach(m => spawnEquation(m.id));
+    }, 200);
+
+    setTimeout(() => {
         clearInterval(interval);
-        const score=(Math.random()*100).toFixed(2);
-        let emoji='⚡', action='';
-        if(score>85){emoji='🚀'; action='Highly viral! Push immediately.';}
-        else if(score>60){emoji='✨'; action='Trending upward. Promote and monitor.';}
-        else{emoji='🌱'; action='Low trend score. Consider nurturing.';}
-        output.textContent=`Trend Score: ${score} ${emoji}\n${action}`;
-    },3500);
+        const score = (Math.random() * 100).toFixed(2);
+        let emoji = '⚡', action = '';
+        if (score > 85) { emoji = '🚀'; action = 'Highly viral! Push immediately.'; }
+        else if (score > 60) { emoji = '✨'; action = 'Trending upward. Promote and monitor.'; }
+        else { emoji = '🌱'; action = 'Low trend score. Consider nurturing.'; }
+
+        output.textContent = `Trend Score: ${score} ${emoji}\n${action}`;
+    }, 3500);
 }
 </script>
 
