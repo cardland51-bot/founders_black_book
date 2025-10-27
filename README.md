@@ -1,307 +1,260 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Luxury Property Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Secret Sauce Interactive Deck</title>
 <style>
-/* General */
-body { margin:0; font-family:'Inter',sans-serif; background:#1f1c2c; color:#fff; display:flex; min-height:100vh; overflow:hidden; }
-.dashboard { display:flex; flex:1; width:100%; overflow:hidden; }
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: #0b0b0b;
+    color: #fff;
+    padding: 20px;
+    overflow-x: hidden;
+}
 
-/* Sidebar */
-.sidebar { width:220px; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); padding:2rem 1rem; display:flex; flex-direction:column; border-right:1px solid rgba(255,255,255,0.1); }
-.logo { font-size:1.5rem; font-weight:700; margin-bottom:2rem; text-align:center; color:#FFD700; }
-.sidebar nav a { display:block; color:#ddd; padding:0.8rem 1rem; margin:0.3rem 0; border-radius:12px; text-decoration:none; transition:0.3s; cursor:pointer; }
-.sidebar nav a.active, .sidebar nav a:hover { background:rgba(255,255,255,0.2); color:#fff; }
+h1, h2 {
+    color: #f5a623;
+    text-align: center;
+    text-shadow: 0 0 20px rgba(245,166,35,0.5);
+}
 
-/* Main */
-.main { flex:1; padding:1rem; overflow-y:auto; display:flex; flex-direction:column; }
-.header { margin-bottom:1rem; }
-.header h1 { font-size:2rem; font-weight:700; }
-.header p { color:#ccc; }
+h2 { margin-top: 50px; }
 
-/* KPI Cards */
-.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-bottom:1rem; }
-.card { padding:1rem; border-radius:20px; text-align:center; display:flex; flex-direction:column; justify-content:center; transition:all 0.3s; background:rgba(255,255,255,0.1); backdrop-filter:blur(2px); box-shadow:0 2px 8px rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); cursor:pointer; }
-.card:hover { transform:translateY(-3px); background:rgba(255,255,255,0.2); }
+p {
+    color: #ccc;
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 auto 20px;
+    font-size: 1em;
+}
 
-/* Charts */
-.charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; margin-bottom:1rem; }
-.chart-card { padding:1rem; border-radius:20px; display:flex; flex-direction:column; justify-content:center; background:rgba(255,255,255,0.1); backdrop-filter:blur(2px); }
+#pipeline-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+}
 
-/* Lists */
-.lists { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem; margin-bottom:1rem; }
-.list-box { background:rgba(255,255,255,0.1); backdrop-filter:blur(2px); padding:1rem; border-radius:20px; max-height:250px; overflow-y:auto; }
-.list-box h3 { margin-top:0; display:flex; justify-content:space-between; align-items:center; }
-.list-box ul { list-style:none; padding-left:0; margin:0; }
-.list-box li { padding:0.5rem; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; }
-.list-box li:hover { background:rgba(255,255,255,0.1); }
+.node {
+    background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06));
+    border-radius: 15px;
+    padding: 20px;
+    margin: 15px;
+    width: 220px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(4px);
+    text-align: center;
+    color: #f5a623;
+    cursor: pointer;
+    position: relative;
+    z-index: 5;
+}
 
-/* Forms */
-.form-box { background:rgba(255,255,255,0.1); backdrop-filter:blur(2px); padding:1rem; border-radius:20px; margin-bottom:1rem; }
-.form-box input, .form-box select, .form-box textarea, .form-box button { width:100%; margin-bottom:0.5rem; padding:0.5rem; border-radius:8px; border:none; }
-.form-box button { background:#FFD700; color:#000; font-weight:600; cursor:pointer; transition:0.3s; }
-.form-box button:hover { background:#FFC300; }
-.message { color:#FFD700; margin-bottom:0.5rem; }
+.node-title { font-weight: 600; margin-bottom: 8px; font-size: 1.1em; }
+.node-content { font-size: 0.95em; color: #ddd; line-height: 1.4; }
 
-/* Modal */
-.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:flex; justify-content:center; align-items:center; z-index:1000; }
-.modal-overlay.hidden { display:none; }
-.modal { background:rgba(255,255,255,0.1); backdrop-filter:blur(4px); padding:2rem; border-radius:20px; width:90%; max-width:900px; max-height:85%; overflow-y:auto; position:relative; }
-.close-modal { position:absolute; top:1rem; right:1rem; font-size:1.5rem; background:none; border:none; color:#fff; cursor:pointer; }
+button.run-btn {
+    background: #f5a623;
+    color: #0b0b0b;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 12px;
+    font-size: 1em;
+    cursor: pointer;
+    margin: 25px 0;
+    transition: 0.3s;
+    box-shadow: 0 0 20px rgba(245,166,35,0.5);
+    font-weight: bold;
+}
+button.run-btn:hover { background: #e59e20; box-shadow: 0 0 30px rgba(245,166,35,0.8); }
+
+.output {
+    background: rgba(255,255,255,0.05);
+    color: #f5a623;
+    font-family: monospace;
+    padding: 18px;
+    border-radius: 12px;
+    text-align: center;
+    min-height: 60px;
+    font-size: 1.2em;
+    box-shadow: 0 0 15px rgba(245,166,35,0.3);
+    position: relative;
+    z-index: 10;
+    white-space: pre-line;
+    margin-bottom: 50px;
+}
+
+.canvas-connection {
+    position: absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    z-index:1;
+}
+
+/* Popup for equations */
+.popup {
+    position: absolute;
+    background: rgba(0,0,0,0.95);
+    padding: 16px 20px;
+    border-radius: 12px;
+    font-family: 'Courier New', monospace;
+    color: #f5a623;
+    font-size: 1em;
+    max-width: 280px;
+    box-shadow: 0 0 25px rgba(245,166,35,0.4);
+    pointer-events:none;
+    opacity:0;
+    transition: opacity 0.3s;
+    z-index: 15;
+    line-height: 1.5;
+}
+
+/* Sections */
+.section { margin-bottom: 60px; padding: 0 10px; max-width: 800px; text-align:center; }
+
+/* Mobile */
+@media (max-width: 768px) {
+    #pipeline-wrapper { flex-direction: column; align-items: center; }
+    .node { width: 90%; max-width: 300px; }
+    .popup { max-width: 90%; font-size:0.95em; }
+}
 </style>
 </head>
 <body>
-<div class="dashboard">
-<aside class="sidebar">
-<h2 class="logo">🏰 Red Mansion</h2>
-<nav>
-<a class="active" id="overview-tab">Overview</a>
-<a id="properties-tab">Properties</a>
-<a id="tenants-tab">Tenants</a>
-<a id="maintenance-tab">Maintenance</a>
-<a id="applications-tab">Applications</a>
-<a id="forms-tab">Forms Inbox</a>
-</nav>
-</aside>
 
-<main class="main">
-<header class="header">
-<h1>Dashboard</h1>
-<p>Luxury Property Management Overview</p>
-</header>
+<h1>Secret Sauce Interactive Deck</h1>
+<p>Explore our full virality algorithm, see authentic-looking equations, and access our pitch, rollout plan, and value proposition in one page.</p>
 
-<section class="kpis">
-<div id="total-properties" class="card"><h3>Total Properties</h3><p class="value">0</p></div>
-<div id="occupied-properties" class="card"><h3>Occupied</h3><p class="value">0</p></div>
-<div id="vacant-properties" class="card"><h3>Vacant</h3><p class="value">0</p></div>
-<div id="monthly-rent" class="card"><h3>Monthly Rent Collected</h3><p class="value">$0</p></div>
-</section>
+<button class="run-btn" onclick="runSimulation()">Generate Trend Score</button>
+<div class="output" id="output">Awaiting calculation...</div>
+<canvas id="connectionCanvas" class="canvas-connection"></canvas>
+<div id="pipeline-wrapper"></div>
+<div id="popup" class="popup"></div>
 
-<section class="charts">
-<div class="chart-card"><h3>Rent Collection</h3><canvas id="rentChart"></canvas></div>
-<div class="chart-card"><h3>Expenses</h3><canvas id="expenseChart"></canvas></div>
-<div class="chart-card"><h3>Occupancy Rate</h3><canvas id="occupancyChart"></canvas></div>
-</section>
-
-<section class="lists">
-<div class="list-box">
-<h3>Maintenance Requests <button onclick="exportCSV('maintenance')">Export CSV</button></h3>
-<ul id="maintenance-items"></ul>
-</div>
-<div class="list-box">
-<h3>Tenants <button onclick="exportCSV('tenants')">Export CSV</button></h3>
-<ul id="tenant-items"></ul>
-</div>
-<div class="list-box">
-<h3>Pending Applications <button onclick="exportCSV('applications')">Export CSV</button></h3>
-<ul id="application-items"></ul>
-</div>
-</section>
-
-<section class="form-box">
-<h3>Add Property</h3>
-<p class="message" id="property-message"></p>
-<input type="text" id="new-property-name" placeholder="Property Name">
-<select id="new-property-status">
-<option value="Occupied">Occupied</option>
-<option value="Vacant">Vacant</option>
-</select>
-<input type="number" id="new-property-rent" placeholder="Monthly Rent">
-<button onclick="addProperty()">Add Property</button>
-</section>
-
-<section class="form-box">
-<h3>Submit Maintenance Request</h3>
-<p class="message" id="maintenance-message"></p>
-<input type="text" id="form-tenant-name" placeholder="Your Name">
-<input type="text" id="form-property" placeholder="Property Name">
-<textarea id="form-issue" placeholder="Describe Issue"></textarea>
-<button onclick="submitMaintenanceForm()">Submit Request</button>
-</section>
-
-<section class="form-box">
-<h3>Submit Rental Application</h3>
-<p class="message" id="application-message"></p>
-<input type="text" id="applicant-name" placeholder="Your Name">
-<input type="text" id="app-property" placeholder="Property Interested">
-<button onclick="submitRentalApplication()">Submit Application</button>
-</section>
-
-</main>
+<!-- Sections -->
+<div class="section" id="pitch">
+    <h2>Pitch Deck</h2>
+    <p>Our algorithm identifies high-potential viral content before it trends. Combined with actionable insights and advanced signals, it allows brands and creators to dominate engagement efficiently.</p>
 </div>
 
-<div id="modal-overlay" class="modal-overlay hidden">
-<div class="modal">
-<button class="close-modal">&times;</button>
-<div id="modal-content"></div>
+<div class="section" id="rollout">
+    <h2>Rollout Plan</h2>
+    <p>
+        Phase 1: Beta with early adopters and creators.<br>
+        Phase 2: Platform integration – we will need developer permission to access certain APIs for real-time data.<br>
+        Phase 3: Full-scale launch – once fully developed, we hope to package this as a standalone unit that can be licensed or sold, so clients can deploy the algorithm without platform dependency.
+    </p>
 </div>
+
+<div class="section" id="value">
+    <h2>Value Proposition</h2>
+    <p>Predict virality, optimize content strategy, and increase engagement ROI. Our pipeline delivers insights that standard engagement metrics cannot provide.</p>
 </div>
 
 <script>
-// Sample Data
-let properties = [
-{name:"Red Mansion 1",status:"Occupied",rent:5000},
-{name:"Red Mansion 2",status:"Vacant",rent:4500},
-{name:"Red Mansion 3",status:"Occupied",rent:6000},
-{name:"Red Mansion 4",status:"Vacant",rent:4800},
-{name:"Red Mansion 5",status:"Occupied",rent:5200},
-{name:"Red Mansion 6",status:"Vacant",rent:4700},
-{name:"Red Mansion 7",status:"Occupied",rent:5500},
-{name:"Red Mansion 8",status:"Vacant",rent:4600}
+// Modules with authentic equation formatting
+const modules = [
+    {id:'data', title:'Data Collection', content:'Aggregates social signals, engagement metrics, and external trends.', eq:'D = Σ(SocialSignals + EngagementMetrics + ExternalTrends)'},
+    {id:'feature', title:'Feature Engineering', content:'Engagement velocity, community resonance, novelty score, format efficiency, propagation potential.', eq:'F = w₁·Velocity + w₂·Resonance + w₃·Novelty + w₄·Format + w₅·Propagation'},
+    {id:'score', title:'Scoring Module', content:'Weighted Virality Score (VS) calculation combining all features.', eq:'VS = Σ(Fᵢ · wᵢ)'},
+    {id:'momentum', title:'Trend Momentum', content:'Predict engagement trajectory using early growth curves.', eq:'M(t) = d(Engagement)/dt'},
+    {id:'insights', title:'Actionable Insights', content:'Provides recommendations and micro-actions for optimal virality.', eq:'Action = f(VS, Momentum, Community)'},
+    {id:'advanced', title:'Advanced Signals', content:'Cross-content references, algorithmic sensitivity, external trend alignment.', eq:'Adv = CrossRefs + Sensitivity + ExternalAlignment'}
 ];
-let tenants = [
-{name:"Alice Green",property:"Red Mansion 1"},
-{name:"Bob White",property:"Red Mansion 3"},
-{name:"Carol Blue",property:"Red Mansion 5"},
-{name:"David Gray",property:"Red Mansion 7"}
-];
-let maintenanceRequests = [
-{title:"Pool Heater Issue",property:"Red Mansion 1",status:"Pending"},
-{title:"Roof Leak",property:"Red Mansion 3",status:"In Progress"},
-{title:"AC Repair",property:"Red Mansion 5",status:"Completed"}
-];
-let applications = [
-{name:"Charlie Black",property:"Red Mansion 2",status:"Pending"},
-{name:"Eve Orange",property:"Red Mansion 4",status:"Pending"}
-];
-let submittedForms = [];
 
-const MAX_DISPLAY = 10;
+const moduleElements = {};
+const popup=document.getElementById('popup');
 
-// Update KPI
-function updateKPI(){
-document.getElementById("total-properties").querySelector(".value").innerText = properties.length;
-document.getElementById("occupied-properties").querySelector(".value").innerText = properties.filter(p=>p.status==="Occupied").length;
-document.getElementById("vacant-properties").querySelector(".value").innerText = properties.filter(p=>p.status==="Vacant").length;
-document.getElementById("monthly-rent").querySelector(".value").innerText = "$"+properties.reduce((sum,p)=>sum+(p.status==="Occupied"?p.rent:0),0);
+// Create nodes with click showing equation
+function createModule(node){
+    const div=document.createElement('div');
+    div.className='node';
+    div.id=node.id;
+    div.innerHTML=`<div class="node-title">${node.title}</div><div class="node-content">${node.content}</div>`;
+    div.onclick=(e)=>{
+        popup.innerHTML=`<strong>Equation:</strong><br>${node.eq}`;
+        const rect=div.getBoundingClientRect();
+        let left=rect.right+10;
+        let top=rect.top;
+        if(left + 280 > window.innerWidth) left=rect.left - 290; // prevent overflow
+        popup.style.left=left+'px';
+        popup.style.top=top+'px';
+        popup.style.opacity=1;
+        setTimeout(()=>{popup.style.opacity=0;},4000);
+    };
+    document.getElementById('pipeline-wrapper').appendChild(div);
+    moduleElements[node.id]=div;
+}
+modules.forEach(createModule);
+
+// Canvas connections
+const canvas=document.getElementById('connectionCanvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){canvas.width=window.innerWidth; canvas.height=window.innerHeight;}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+function drawConnections(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let i=0;i<modules.length-1;i++){
+        const a=moduleElements[modules[i].id].getBoundingClientRect();
+        const b=moduleElements[modules[i+1].id].getBoundingClientRect();
+        ctx.strokeStyle='rgba(245,166,35,0.3)';
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(a.left+a.width/2,a.top+a.height/2);
+        ctx.lineTo(b.left+b.width/2,b.top+b.height/2);
+        ctx.stroke();
+    }
+    requestAnimationFrame(drawConnections);
+}
+drawConnections();
+
+// Floating equations
+const eqs=["f(x)=x²+3x+2","y=sin(x)+cos(y)","E=mc²","a²+b²=c²","∑ᵢ=1ⁿ i²"];
+function spawnEquation(module){
+    const eq=document.createElement('div');
+    eq.className='node-content';
+    eq.style.position='absolute';
+    const rect=moduleElements[module].getBoundingClientRect();
+    eq.style.left=(rect.left+Math.random()*rect.width)+'px';
+    eq.style.top=(rect.top+Math.random()*rect.height)+'px';
+    eq.style.color='rgba(245,166,35,0.3)';
+    eq.style.fontSize='14px';
+    eq.textContent=eqs[Math.floor(Math.random()*eqs.length)];
+    document.body.appendChild(eq);
+    let dy=-0.5-Math.random();
+    function animate(){
+        const top=parseFloat(eq.style.top);
+        if(top<rect.top-50){eq.remove();return;}
+        eq.style.top=(top+dy)+'px';
+        requestAnimationFrame(animate);
+    }
+    animate();
 }
 
-// Create list item
-function createListItem(text, htmlContent){
-const li = document.createElement("li");
-li.innerText = text;
-li.addEventListener("click",()=>openModal(htmlContent));
-return li;
+// Run simulation
+function runSimulation(){
+    const output=document.getElementById('output');
+    output.textContent='Calculating...';
+    const interval=setInterval(()=>{
+        modules.slice(1,modules.length-1).forEach(m=>spawnEquation(m.id));
+    },200);
+    setTimeout(()=>{
+        clearInterval(interval);
+        const score=(Math.random()*100).toFixed(2);
+        let emoji='⚡', action='';
+        if(score>85){emoji='🚀'; action='Highly viral! Push immediately.';}
+        else if(score>60){emoji='✨'; action='Trending upward. Promote and monitor.';}
+        else{emoji='🌱'; action='Low trend score. Consider nurturing.';}
+        output.textContent=`Trend Score: ${score} ${emoji}\n${action}`;
+    },3500);
 }
-
-// Update Lists
-function updateLists(){
-const maintenanceUl = document.getElementById("maintenance-items");
-const tenantUl = document.getElementById("tenant-items");
-const appUl = document.getElementById("application-items");
-[maintenanceUl, tenantUl, appUl].forEach(ul=>ul.innerHTML="");
-
-maintenanceRequests.slice(0,MAX_DISPLAY).forEach(m=>maintenanceUl.appendChild(
-createListItem(`${m.title} - ${m.property} - ${m.status}`, `<h2>${m.title}</h2><p>Property: ${m.property}</p><p>Status: ${m.status}</p>`)
-));
-
-tenants.slice(0,MAX_DISPLAY).forEach(t=>tenantUl.appendChild(
-createListItem(`${t.name} - ${t.property}`, `<h2>${t.name}</h2><p>Property: ${t.property}</p>`)
-));
-
-applications.slice(0,MAX_DISPLAY).forEach(a=>appUl.appendChild(
-createListItem(`${a.name} - ${a.property} - ${a.status}`, `<h2>${a.name}</h2><p>Property: ${a.property}</p><p>Status: ${a.status}</p>`)
-));
-}
-
-// Modal
-const modalOverlay = document.getElementById("modal-overlay");
-const modalContent = document.getElementById("modal-content");
-function openModal(html){modalContent.innerHTML=html; modalOverlay.classList.remove("hidden");}
-document.querySelector(".close-modal").addEventListener("click",()=>modalOverlay.classList.add("hidden"));
-
-// CSV Export
-function exportCSV(type){
-let data = [];
-if(type==="properties") data = properties;
-if(type==="tenants") data = tenants;
-if(type==="maintenance") data = maintenanceRequests;
-if(type==="applications") data = applications;
-if(!data.length) return alert("No data to export");
-const csvContent = "data:text/csv;charset=utf-8,"+Object.keys(data[0]).join(",")+"\n"+data.map(e=>Object.values(e).join(",")).join("\n");
-const encodedUri = encodeURI(csvContent);
-const link = document.createElement("a");
-link.setAttribute("href", encodedUri);
-link.setAttribute("download", `${type}.csv`);
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-}
-
-// Add Property
-function addProperty(){
-const name = document.getElementById("new-property-name").value;
-const status = document.getElementById("new-property-status").value;
-const rent = parseFloat(document.getElementById("new-property-rent").value);
-const message = document.getElementById("property-message");
-if(name && !isNaN(rent)){
-properties.push({name,status,rent});
-updateKPI(); updateLists();
-message.innerText = "Property added!";
-setTimeout(()=>message.innerText="",2000);
-document.getElementById("new-property-name").value="";
-document.getElementById("new-property-rent").value="";
-}
-}
-
-// Submit Maintenance Form
-function submitMaintenanceForm(){
-const name = document.getElementById("form-tenant-name").value;
-const property = document.getElementById("form-property").value;
-const issue = document.getElementById("form-issue").value;
-const message = document.getElementById("maintenance-message");
-if(name && property && issue){
-maintenanceRequests.push({title:issue,property,status:"Pending"});
-submittedForms.push({type:"Maintenance",name,property,issue});
-updateLists();
-message.innerText = "Maintenance request submitted!";
-setTimeout(()=>message.innerText="",2000);
-document.getElementById("form-tenant-name").value="";
-document.getElementById("form-property").value="";
-document.getElementById("form-issue").value="";
-}
-}
-
-// Submit Rental Application
-function submitRentalApplication(){
-const name = document.getElementById("applicant-name").value;
-const property = document.getElementById("app-property").value;
-const message = document.getElementById("application-message");
-if(name && property){
-applications.push({name, property, status:"Pending"});
-submittedForms.push({type:"Application",name,property});
-updateLists();
-message.innerText = "Rental application submitted!";
-setTimeout(()=>message.innerText="",2000);
-document.getElementById("applicant-name").value="";
-document.getElementById("app-property").value="";
-}
-
-// Charts
-let rentChart, expenseChart, occupancyChart;
-function loadCharts(){
-if(rentChart) return; // Already loaded
-rentChart = new Chart(document.getElementById('rentChart'), { type:'line', data:{ labels:properties.map(p=>p.name), datasets:[{ label:'Rent Collected', data: properties.map(p=>p.status==="Occupied"?p.rent:0), borderColor:'#FFD700', backgroundColor:'rgba(255,215,0,0.2)', fill:true, tension:0.4 }] }, options:{responsive:true, maintainAspectRatio:false} });
-expenseChart = new Chart(document.getElementById('expenseChart'), { type:'bar', data:{ labels:['Repairs','Utilities','Staff','Misc'], datasets:[{ label:'Expenses', data:[2000,1000,1500,500], backgroundColor:['#FFC300','#DAF7A6','#FF5733','#C70039'] }] }, options:{responsive:true, maintainAspectRatio:false} });
-occupancyChart = new Chart(document.getElementById('occupancyChart'), { type:'doughnut', data:{ labels:['Occupied','Vacant'], datasets:[{ data:[properties.filter(p=>p.status==="Occupied").length, properties.filter(p=>p.status==="Vacant").length], backgroundColor:['#4CAF50','#F44336'] }] }, options:{responsive:true, maintainAspectRatio:false} });
-}
-
-// Tab Navigation
-const tabs = document.querySelectorAll(".sidebar nav a");
-tabs.forEach(tab=>{
-tab.addEventListener("click",()=>{
-tabs.forEach(t=>t.classList.remove("active"));
-tab.classList.add("active");
-if(tab.id==='overview-tab'){ loadCharts(); }
-});
-});
-
-// Initialize
-updateKPI();
-updateLists();
 </script>
 
 </body>
